@@ -9,7 +9,13 @@ see the https://github.com/jasonhancock/cloudstack-python-client/tags.
 Script Setup
 --------
 
-properties file is using to setup script with parameters to access cloudstack api and to define zone to auto scale
+You need create the properties file to setup script with parameters to access cloudstack api and to define zone to auto scale
+
+```
+$ touch properties
+```
+
+Edit the properties file with the contents below:
 
 ```
 [ConfigApi]
