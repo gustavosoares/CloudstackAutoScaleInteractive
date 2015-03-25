@@ -1,0 +1,220 @@
+#!/usr/bin/env python
+
+import ConfigParser
+import CloudStack
+import sys
+import argparse
+import time
+ 
+def ConfigSectionMap(section):
+    config = ConfigParser.ConfigParser()
+    config.read('properties')
+    dict = {}
+    options = config.options(section)
+    for option in options:
+        try:
+            dict[option] = config.get(section, option)
+            if dict[option] == -1:
+                DebugPrint("skip: %s" % option)
+        except:
+            print("exception on %s!" % option)
+            dict[option] = None
+    return dict
+
+class Colors:
+	HEADER = '\033[95m'
+	OKBLUE = '\033[94m'
+	OKGREEN = '\033[92m'
+	WARNING = '\033[93m'
+	FAIL = '\033[91m'
+	ENDC = '\033[0m'
+	BOLD = '\033[1m'
+	UNDERLINE = '\033[4m'
+
+def asyncResult(jobid):
+	asyncargs = {
+       'jobid': jobid
+	}
+ 
+ 	async = cloudstack.queryAsyncJobResult(asyncargs)
+	ready = async['jobstatus']
+	while (ready == 0):
+		print '\b.',
+		sys.stdout.flush()
+		time.sleep(5)
+		async = cloudstack.queryAsyncJobResult(asyncargs)
+		ready = async['jobstatus']
+ 	
+ 	result =  async['jobresult']
+ 	return result
+
+def listCounters():
+	print Colors.WARNING + "Listing counters:" + Colors.ENDC
+	counters = cloudstack.listCounters()
+
+	for counter in counters:
+		print "ID = %s | Name = %s" % (counter['id'], counter['name'])
+
+def listConditions():
+	print Colors.WARNING + "Listing conditions...:" + Colors.ENDC
+	conditions = cloudstack.listConditions()
+
+	for condition in conditions:
+		print "ID = %s | Counter = %s | Operator = %s | Threshold = %s" % (condition['id'], condition['counter'], condition['relationaloperator'], condition['threshold'])
+
+def listServiceOfferings():
+	print Colors.WARNING + "Listing service offerings...:" + Colors.ENDC
+	serviceofferings = cloudstack.listServiceOfferings()
+
+	for serviceoffering in serviceofferings:
+		print "ID = %s | Name = %s" % (serviceoffering['id'], serviceoffering['name'])
+
+def listTemplates():
+	print Colors.WARNING + "Listing templates...:" + Colors.ENDC
+	templates = cloudstack.listTemplates({'templatefilter': 'featured'})
+
+	for template in templates:
+		print "ID = %s | Name = %s" % (template['id'], template['name'])
+
+def listLoadBalancerRules():
+	print Colors.WARNING + "Listing load balancers...:" + Colors.ENDC
+	lbrules = cloudstack.listLoadBalancerRules()
+
+	for lbrule in lbrules:
+		print "ID = %s | Name = %s" % (lbrule['id'], lbrule['name'])
+
+def listAutoScalePolicies():
+	print Colors.WARNING + "Listing policies...:" + Colors.ENDC
+	autoscalepolicies = cloudstack.listAutoScalePolicies()
+
+	for autoscalepolicy in autoscalepolicies['autoscalepolicy']:
+		print "ID = %s | Action = %s | Conditions = %s" % (autoscalepolicy['id'], autoscalepolicy['action'], autoscalepolicy['conditions'])
+
+def listAutoScaleVmProfiles():
+	print Colors.WARNING + "Listing vm profiles...:" + Colors.ENDC
+	vmprofiles = cloudstack.listAutoScaleVmProfiles()
+
+	for vmprofile in vmprofiles:
+		print "ID = %s | Template = %s | ServiceOffering = %s" % (vmprofile['id'], vmprofile['templateid'], vmprofile['serviceofferingid'])
+
+def createCondition():
+	print Colors.WARNING + "Creating condition...:" + Colors.ENDC
+	listCounters()
+	counterid = raw_input(Colors.WARNING + "Enter the counter id: " + Colors.ENDC)
+	#TODO: validar input
+	print Colors.WARNING + "Listing operators:" + Colors.ENDC
+	print "LT = Less than\nLE = Less than or iqual to\nGT = Greater then\nGE = Greater then or iqual to"
+	operator = ''
+	operators=['LT', 'LE', 'GT', 'GE']
+	while operator not in operators:
+		operator = raw_input(Colors.WARNING + "Enter with an operator: " + Colors.ENDC)
+		if operator not in operators:
+			print Colors.FAIL + "Enter with a valid operator" + Colors.ENDC
+	threshold = raw_input(Colors.WARNING + "Enter the value for threshold (0% a 100%): " + Colors.ENDC)
+	
+	job = cloudstack.createCondition({
+		'counterid': counterid,
+		'relationaloperator': operator,
+		'threshold': threshold
+	})
+
+	print "Creating condition. Job id = %s" % job['jobid']
+	print asyncResult(job['jobid'])
+
+def createPolicy():
+	print Colors.WARNING + "Creating policy...:" + Colors.ENDC
+	listConditions()
+	conditionids = raw_input(Colors.WARNING + "Enter the condition id: " + Colors.ENDC)
+	action = ''
+	actions=['scaleup', 'scaledown']
+	while action not in actions:
+		action = raw_input(Colors.WARNING + "Enter an action scaleup or scaledown: " + Colors.ENDC)
+	duration = raw_input(Colors.WARNING + "Enter the duration (seconds) for which the condition have to be true before action is taken: " + Colors.ENDC)
+
+	job = cloudstack.createAutoScalePolicy({
+		'conditionids': conditionids,
+		'action': action,
+		'duration': duration
+	})
+
+	print "Creating policy. Job id = %s" % job['jobid']
+	print asyncResult(job['jobid'])
+
+def createVmProfile():
+	print Colors.WARNING + "Creating vm profile...:" + Colors.ENDC
+	listServiceOfferings()
+	serviceofferingid = raw_input(Colors.WARNING + "Enter the service offering id: " + Colors.ENDC)
+	listTemplates()
+	templateid = raw_input(Colors.WARNING + "Enter the template id: " + Colors.ENDC)
+	zoneid = ConfigSectionMap("Envs")['zoneid']
+
+	job = cloudstack.createAutoScaleVmProfile({
+		'serviceofferingid': serviceofferingid,
+		'templateid': templateid,
+		'zoneid': zoneid
+	})
+
+	print "Creating vm profile. Job id = %s" % job['jobid']
+	print asyncResult(job['jobid'])
+
+def createVmGroup():
+	print Colors.WARNING + "Creating vm group...:" + Colors.ENDC
+	listLoadBalancerRules()
+	lbruleid = raw_input(Colors.WARNING + "Enter the load balancer id: " + Colors.ENDC)
+	minmembers = raw_input(Colors.WARNING + "Enter the minimum value of vms in group: " + Colors.ENDC)
+	maxmembers = raw_input(Colors.WARNING + "Enter the maximum value of vms in group: " + Colors.ENDC)
+	listAutoScalePolicies()
+	scaledownpolicyid = raw_input(Colors.WARNING + "Enter the policy id to scaledown: " + Colors.ENDC)
+	scaleuppolicyid = raw_input(Colors.WARNING + "Enter the policy id to scaleup: " + Colors.ENDC)
+	listAutoScaleVmProfiles()
+	vmprofileid = raw_input(Colors.WARNING + "Enter the vm profile id: " + Colors.ENDC)
+
+	job = cloudstack.createAutoScaleVmGroup({
+		'lbruleid': lbruleid,
+		'minmembers': minmembers,
+		'maxmembers': maxmembers,
+		'scaledownpolicyids': scaledownpolicyid,
+		'scaleuppolicyids': scaleuppolicyid,
+		'vmprofileid': vmprofileid
+	})
+
+	print "Creating vm group. Job id = %s" % job['jobid']
+	print asyncResult(job['jobid'])
+
+
+parser = argparse.ArgumentParser(description='Cloudstack Auto Scale script.')
+parser.add_argument('-c','--command', help='counter, condition, policy, vmprofile or vmgroup',required=True)
+parser.add_argument('-o','--option',help='list or create', required=True)
+args = parser.parse_args()
+
+if len(sys.argv) <= 1:
+    parser.print_help()
+    sys.exit(1)
+
+api = ConfigSectionMap("ConfigApi")['api']
+apikey = ConfigSectionMap("ConfigApi")['apikey']
+secret = ConfigSectionMap("ConfigApi")['secret']
+cloudstack = CloudStack.Client(api, apikey, secret)
+
+if args.option == 'list':
+	if args.command == 'counter':
+		listCounters()
+	elif args.command == 'condition':
+		listConditions()
+	elif args.command == 'policy':
+		listAutoScalePolicies()
+	elif args.command == 'vmprofile':
+		listAutoScaleVmProfiles()
+	else:
+		parser.print_help()
+if args.option == 'create':
+	if args.command == 'condition':
+		createCondition()
+	elif args.command == 'policy':
+		createPolicy()
+	elif args.command == 'vmprofile':
+		createVmProfile()
+	elif args.command == 'vmgroup':
+		createVmGroup()
+	else:
+		parser.print_help()
