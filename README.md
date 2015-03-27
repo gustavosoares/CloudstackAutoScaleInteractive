@@ -9,7 +9,7 @@ see the https://github.com/jasonhancock/cloudstack-python-client/tags.
 Script Setup
 --------
 
-You need create the properties file to setup script with parameters to access cloudstack api and to define zone to auto scale
+You need to create the properties file to setup script with parameters to access cloudstack api and to define zone to auto scale
 
 ```
 $ touch properties
@@ -46,10 +46,13 @@ optional arguments:
 
 TODO
 --------
+- [X] Display template name and serviceoffering name in vmprofile list function;
 - [ ] Function to list autoscale vm group;
 - [ ] Function to create counters;
 - [ ] Function to list load balancers rules;
+- [ ] Remove to all commands;
 - [ ] Validate all inputs;
+- [ ] Enable to create an autoscale in projects
 
 
 References

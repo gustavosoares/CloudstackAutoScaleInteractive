@@ -93,9 +93,16 @@ def listAutoScalePolicies():
 def listAutoScaleVmProfiles():
 	print Colors.WARNING + "Listing vm profiles...:" + Colors.ENDC
 	vmprofiles = cloudstack.listAutoScaleVmProfiles()
+	zoneid = ConfigSectionMap("Envs")['zoneid']
 
 	for vmprofile in vmprofiles:
-		print "ID = %s | Template = %s | ServiceOffering = %s" % (vmprofile['id'], vmprofile['templateid'], vmprofile['serviceofferingid'])
+		templateid = vmprofile['templateid']
+		templates = cloudstack.listTemplates({'templatefilter': 'featured', 'id': templateid, 'zoneid': zoneid})
+		serviceofferingid = vmprofile['serviceofferingid']
+		serviceofferings = cloudstack.listServiceOfferings({'id': serviceofferingid})
+		for template in templates:
+			for serviceoffering in serviceofferings:
+				print "ID = %s | Template = %s | ServiceOffering = %s" % (vmprofile['id'], template['name'], serviceoffering['name'])
 
 def createCondition():
 	print Colors.WARNING + "Creating condition...:" + Colors.ENDC
