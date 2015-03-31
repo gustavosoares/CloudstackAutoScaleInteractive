@@ -25,6 +25,7 @@ secret: xxxxxx
 
 [Envs]
 zoneid: xxxxxx
+projectid: xxxxxx
 ```
 
 Executing Script
@@ -47,12 +48,12 @@ optional arguments:
 TODO
 --------
 - [X] Display template name and serviceoffering name in vmprofile list function;
-- [ ] Function to list autoscale vm group;
+- [X] Function to list autoscale vm group;
 - [ ] Function to create counters;
-- [ ] Function to list load balancers rules;
+- [X] Function to list load balancers rules;
 - [ ] Remove to all commands;
 - [ ] Validate all inputs;
-- [ ] Enable to create an autoscale in projects
+- [X] Enable to create an autoscale in projects
 
 
 References
