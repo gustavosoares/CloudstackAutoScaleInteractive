@@ -1,25 +1,13 @@
 #!/usr/bin/env python
 
-import ConfigParser
+__author__ = 'Cristiano Casado <co.casado@gmail.com>'
+__version__ = '0.2'
+
+from Config import Config
 import CloudStack
 import sys
 import argparse
 import time
- 
-def ConfigSectionMap(section):
-    config = ConfigParser.ConfigParser()
-    config.read('properties')
-    dict = {}
-    options = config.options(section)
-    for option in options:
-        try:
-            dict[option] = config.get(section, option)
-            if dict[option] == -1:
-                DebugPrint("skip: %s" % option)
-        except:
-            print("exception on %s!" % option)
-            dict[option] = None
-    return dict
 
 class Colors:
 	HEADER = '\033[95m'
@@ -53,11 +41,11 @@ def listCounters():
 	counters = cloudstack.listCounters()
 
 	for counter in counters:
-		print "ID = %s | Name = %s" % (counter['id'], counter['name'])
+		print "ID = %s | Name = %s | Source = %s" % (counter['id'], counter['name'], counter['source'])
 
 def listConditions():
 	print Colors.WARNING + "Listing conditions...:" + Colors.ENDC
-	conditions = cloudstack.listConditions()
+	conditions = cloudstack.listConditions({'projectid': projectid})
 
 	for condition in conditions:
 		print "ID = %s | Counter = %s | Operator = %s | Threshold = %s" % (condition['id'], condition['counter'], condition['relationaloperator'], condition['threshold'])
@@ -78,7 +66,7 @@ def listTemplates():
 
 def listLoadBalancerRules():
 	print Colors.WARNING + "Listing load balancers...:" + Colors.ENDC
-	lbrules = cloudstack.listLoadBalancerRules()
+	lbrules = cloudstack.listLoadBalancerRules({'projectid': projectid})
 
 	for lbrule in lbrules:
 		print "ID = %s | Name = %s" % (lbrule['id'], lbrule['name'])
@@ -92,8 +80,7 @@ def listAutoScalePolicies():
 
 def listAutoScaleVmProfiles():
 	print Colors.WARNING + "Listing vm profiles...:" + Colors.ENDC
-	vmprofiles = cloudstack.listAutoScaleVmProfiles()
-	zoneid = ConfigSectionMap("Envs")['zoneid']
+	vmprofiles = cloudstack.listAutoScaleVmProfiles({'projectid': projectid})
 
 	for vmprofile in vmprofiles:
 		templateid = vmprofile['templateid']
@@ -103,6 +90,16 @@ def listAutoScaleVmProfiles():
 		for template in templates:
 			for serviceoffering in serviceofferings:
 				print "ID = %s | Template = %s | ServiceOffering = %s" % (vmprofile['id'], template['name'], serviceoffering['name'])
+
+def listAutoScaleVmGroup():
+	print Colors.WARNING + "Listing vm groups...:" + Colors.ENDC
+	vmgroups = cloudstack.listAutoScaleVmGroups({'projectid': projectid})
+
+	for vmgroup in vmgroups:
+		lbruleid = vmgroup['lbruleid']
+		lbrules = cloudstack.listLoadBalancerRules({'lbruleid': lbruleid})
+		for lbrule in lbrules:
+			print "ID = %s | LoadBalancer = %s | Interval = %s | Maxmembers = %s | Minmembers = %s | Scaledownpolicies = %s | Scaleuppolicies = %s" % (vmgroup['id'], lbrule['name'], vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], vmgroup['scaledownpolicies'], vmgroup['scaleuppolicies'])
 
 def createCondition():
 	print Colors.WARNING + "Creating condition...:" + Colors.ENDC
@@ -122,7 +119,8 @@ def createCondition():
 	job = cloudstack.createCondition({
 		'counterid': counterid,
 		'relationaloperator': operator,
-		'threshold': threshold
+		'threshold': threshold,
+		'projectid': projectid
 	})
 
 	print "Creating condition. Job id = %s" % job['jobid']
@@ -153,12 +151,12 @@ def createVmProfile():
 	serviceofferingid = raw_input(Colors.WARNING + "Enter the service offering id: " + Colors.ENDC)
 	listTemplates()
 	templateid = raw_input(Colors.WARNING + "Enter the template id: " + Colors.ENDC)
-	zoneid = ConfigSectionMap("Envs")['zoneid']
 
 	job = cloudstack.createAutoScaleVmProfile({
 		'serviceofferingid': serviceofferingid,
 		'templateid': templateid,
-		'zoneid': zoneid
+		'zoneid': zoneid,
+		'projectid': projectid
 	})
 
 	print "Creating vm profile. Job id = %s" % job['jobid']
@@ -188,7 +186,6 @@ def createVmGroup():
 	print "Creating vm group. Job id = %s" % job['jobid']
 	print asyncResult(job['jobid'])
 
-
 parser = argparse.ArgumentParser(description='Cloudstack Auto Scale script.')
 parser.add_argument('-c','--command', help='counter, condition, policy, vmprofile or vmgroup',required=True)
 parser.add_argument('-o','--option',help='list or create', required=True)
@@ -198,9 +195,13 @@ if len(sys.argv) <= 1:
     parser.print_help()
     sys.exit(1)
 
-api = ConfigSectionMap("ConfigApi")['api']
-apikey = ConfigSectionMap("ConfigApi")['apikey']
-secret = ConfigSectionMap("ConfigApi")['secret']
+config = Config()
+api = config.ConfigSectionMap("ConfigApi")['api']
+apikey = config.ConfigSectionMap("ConfigApi")['apikey']
+secret = config.ConfigSectionMap("ConfigApi")['secret']
+projectid = config.ConfigSectionMap("Envs")['projectid']
+zoneid = config.ConfigSectionMap("Envs")['zoneid']
+
 cloudstack = CloudStack.Client(api, apikey, secret)
 
 if args.option == 'list':
@@ -212,10 +213,14 @@ if args.option == 'list':
 		listAutoScalePolicies()
 	elif args.command == 'vmprofile':
 		listAutoScaleVmProfiles()
+	elif args.command == 'vmgroup':
+		listAutoScaleVmGroup()
 	else:
 		parser.print_help()
 if args.option == 'create':
-	if args.command == 'condition':
+	if args.command == 'counter':
+		print "Function not implemented"
+	elif args.command == 'condition':
 		createCondition()
 	elif args.command == 'policy':
 		createPolicy()
@@ -225,3 +230,4 @@ if args.option == 'create':
 		createVmGroup()
 	else:
 		parser.print_help()
+
