@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 __author__ = 'Cristiano Casado <co.casado@gmail.com>'
-__version__ = '0.2'
+__version__ = '0.3'
 
 from Config import Config
+from prettytable import PrettyTable
 import CloudStack
 import sys
 import argparse
@@ -39,49 +40,73 @@ def asyncResult(jobid):
 def listCounters():
 	print Colors.WARNING + "Listing counters:" + Colors.ENDC
 	counters = cloudstack.listCounters()
-
+	table = PrettyTable(["ID", "Name", "Source"])
+	table.align["Name"] = "l"
+	table.align["Source"] = "l"
 	for counter in counters:
-		print "ID = %s | Name = %s | Source = %s" % (counter['id'], counter['name'], counter['source'])
+		table.add_row([counter['id'], counter['name'], counter['source']])
+	print table
 
 def listConditions():
 	print Colors.WARNING + "Listing conditions...:" + Colors.ENDC
 	conditions = cloudstack.listConditions({'projectid': projectid})
+	table = PrettyTable(["ID", "Counter", "RelationalOperator", "Threshold(%)"])
 
 	for condition in conditions:
-		print "ID = %s | Counter = %s | Operator = %s | Threshold = %s" % (condition['id'], condition['counter'], condition['relationaloperator'], condition['threshold'])
+		counters = (condition.get('counter'))
+		for counter in counters:
+			table.add_row([condition['id'], counter['name'], condition['relationaloperator'], condition['threshold']])
+	print table
 
 def listServiceOfferings():
 	print Colors.WARNING + "Listing service offerings...:" + Colors.ENDC
 	serviceofferings = cloudstack.listServiceOfferings()
+	table = PrettyTable(["ID", "Name"])
+	table.align["Name"] = "l"
 
 	for serviceoffering in serviceofferings:
-		print "ID = %s | Name = %s" % (serviceoffering['id'], serviceoffering['name'])
+		table.add_row([serviceoffering['id'], serviceoffering['name']])
+	print table
 
 def listTemplates():
 	print Colors.WARNING + "Listing templates...:" + Colors.ENDC
 	templates = cloudstack.listTemplates({'templatefilter': 'featured'})
+	table = PrettyTable(["ID", "Name"])
+	table.align["Name"] = "l"
 
 	for template in templates:
-		print "ID = %s | Name = %s" % (template['id'], template['name'])
+		table.add_row([template['id'], template['name']])
+	print table
 
 def listLoadBalancerRules():
 	print Colors.WARNING + "Listing load balancers...:" + Colors.ENDC
 	lbrules = cloudstack.listLoadBalancerRules({'projectid': projectid})
+	table = PrettyTable(["ID", "Name"])
+	table.align["Name"] = "l"
 
 	for lbrule in lbrules:
-		print "ID = %s | Name = %s" % (lbrule['id'], lbrule['name'])
+		table.add_row([lbrule['id'], lbrule['name']])
+	print table
 
 def listAutoScalePolicies():
 	print Colors.WARNING + "Listing policies...:" + Colors.ENDC
 	autoscalepolicies = cloudstack.listAutoScalePolicies()
+	table = PrettyTable(["ID", "Action", "Duration", "QuietTime", "Counter", "RelationalOperator", "Threshold(%)"])
 
 	for autoscalepolicy in autoscalepolicies['autoscalepolicy']:
-		print "ID = %s | Action = %s | Conditions = %s" % (autoscalepolicy['id'], autoscalepolicy['action'], autoscalepolicy['conditions'])
+		conditions = (autoscalepolicy.get('conditions'))
+		for condition in conditions:
+			counters = (condition.get('counter'))
+			for counter in counters:
+				table.add_row([autoscalepolicy['id'], autoscalepolicy['action'], autoscalepolicy['duration'], autoscalepolicy['quiettime'], counter['name'], condition['relationaloperator'], condition['threshold']])
+	print table
 
 def listAutoScaleVmProfiles():
 	print Colors.WARNING + "Listing vm profiles...:" + Colors.ENDC
 	vmprofiles = cloudstack.listAutoScaleVmProfiles({'projectid': projectid})
-
+	table = PrettyTable(["ID", "Template", "ServiceOffering"])
+	table.align["Template"] = "l"
+	table.align["ServiceOffering"] = "l"
 	for vmprofile in vmprofiles:
 		templateid = vmprofile['templateid']
 		templates = cloudstack.listTemplates({'templatefilter': 'featured', 'id': templateid, 'zoneid': zoneid})
@@ -89,23 +114,39 @@ def listAutoScaleVmProfiles():
 		serviceofferings = cloudstack.listServiceOfferings({'id': serviceofferingid})
 		for template in templates:
 			for serviceoffering in serviceofferings:
-				print "ID = %s | Template = %s | ServiceOffering = %s" % (vmprofile['id'], template['name'], serviceoffering['name'])
+				table.add_row([vmprofile['id'], template['name'], serviceoffering['name']])
+	print table
 
 def listAutoScaleVmGroup():
 	print Colors.WARNING + "Listing vm groups...:" + Colors.ENDC
 	vmgroups = cloudstack.listAutoScaleVmGroups({'projectid': projectid})
+	table = PrettyTable(["ID", "LoadBalancer", "Interval", "Maxmembers", "Minmembers", "Action", "Counter", "RelationalOperator", "Threshold"])
 
 	for vmgroup in vmgroups:
 		lbruleid = vmgroup['lbruleid']
 		lbrules = cloudstack.listLoadBalancerRules({'lbruleid': lbruleid})
 		for lbrule in lbrules:
-			print "ID = %s | LoadBalancer = %s | Interval = %s | Maxmembers = %s | Minmembers = %s | Scaledownpolicies = %s | Scaleuppolicies = %s" % (vmgroup['id'], lbrule['name'], vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], vmgroup['scaledownpolicies'], vmgroup['scaleuppolicies'])
+			lbname = lbrule['name']
+		scaledownpolicies = (vmgroup.get('scaledownpolicies'))
+		scaleuppolicies = (vmgroup.get('scaleuppolicies'))
+		for scaledownpolicy in scaledownpolicies:
+			conditionsd = (scaledownpolicy.get('conditions'))
+			for conditiond in conditionsd:
+				countersd = (conditiond.get('counter'))
+				for counterd in countersd:
+					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], scaledownpolicy['action'], counterd['name'], conditiond['relationaloperator'], conditiond['threshold']])
+		for scaleuppolicy in scaleuppolicies:
+			conditionsu = (scaleuppolicy.get('conditions'))
+			for conditionu in conditionsu:
+				countersu = (conditionu.get('counter'))
+				for counteru in countersu:
+					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], scaleuppolicy['action'], counteru['name'], conditionu['relationaloperator'], conditionu['threshold']])
+	print table
 
 def createCondition():
 	print Colors.WARNING + "Creating condition...:" + Colors.ENDC
 	listCounters()
 	counterid = raw_input(Colors.WARNING + "Enter the counter id: " + Colors.ENDC)
-	#TODO: validar input
 	print Colors.WARNING + "Listing operators:" + Colors.ENDC
 	print "LT = Less than\nLE = Less than or iqual to\nGT = Greater then\nGE = Greater then or iqual to"
 	operator = ''

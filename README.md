@@ -9,6 +9,14 @@ see the https://github.com/jasonhancock/cloudstack-python-client/tags.
 Script Setup
 --------
 
+Create the environment and install python packages
+
+```
+$ mkvirtualenv CloudstackAutoScale
+$ workon CloudstackAutoScale
+$ pip install -r requirements.txt
+```
+
 You need to create the properties file to setup script with parameters to access cloudstack api and to define zone to auto scale
 
 ```
@@ -45,15 +53,63 @@ optional arguments:
                         list or create
 ```
 
+Examples
+--------
+
+```
+$ python CloudstackAutoScale.py -c vmgroup -o create
+
+Creating vm group...:
+Listing load balancers...:
++--------------------------------------+------------------------+
+|                  ID                  | Name                   |
++--------------------------------------+------------------------+
+| 1d28361d-137d-4e69-b8b2-4be4bae033d4 | test.com               |
++--------------------------------------+------------------------+
+Enter the load balancer id: 1d28361d-137d-4e69-b8b2-4be4bae033d4
+Enter the minimum value of vms in group: 2
+Enter the maximum value of vms in group: 4
+Listing policies...:
++--------------------------------------+-----------+----------+-----------+----------------+--------------------+--------------+
+|                  ID                  |   Action  | Duration | QuietTime |     Counter    | RelationalOperator | Threshold(%) |
++--------------------------------------+-----------+----------+-----------+----------------+--------------------+--------------+
+| 80df0ec2-788e-46ff-a9c1-1de2209b3dda |  scaleup  |    30    |    300    | Linux User CPU |         GT         |      80      |
+| 215d61fd-ac82-4270-96ca-be660f609f19 | scaledown |    30    |    300    | Linux User CPU |         LT         |      10      |
++--------------------------------------+-----------+----------+-----------+----------------+--------------------+--------------+
+Enter the policy id to scaledown: 215d61fd-ac82-4270-96ca-be660f609f19
+Enter the policy id to scaleup: 80df0ec2-788e-46ff-a9c1-1de2209b3dda
+Listing vm profiles...:
++--------------------------------------+-----------------------------+-----------------+
+|                  ID                  | Template                    | ServiceOffering |
++--------------------------------------+-----------------------------+-----------------+
+| 0dc05453-9a09-4739-8c86-ad2f5c9b3b42 | CentOS 5.10 x86_64 20140930 | Huge-NfsDsk     |
++--------------------------------------+-----------------------------+-----------------+
+Enter the vm profile id: 0dc05453-9a09-4739-8c86-ad2f5c9b3b42
+
+"Creating vm group. Job id = 69b935eb-2b93-478d-b8e5-20d9f44b65f0
+```
+
+```
+$ python CloudstackAutoScale.py -c vmgroup -o list
+
+Listing vm groups...:
++--------------------------------------+------------------+----------+------------+------------+-----------+----------------+--------------------+-----------+
+|                  ID                  |   LoadBalancer   | Interval | Maxmembers | Minmembers |   Action  |     Counter    | RelationalOperator | Threshold |
++--------------------------------------+-----------------------------+------------+------------+-----------+----------------+--------------------+-----------+
+| 57be3c4e-3e6f-436b-ad22-90b0dacc0f80 | test.com         |    30    |     4      |     2      | scaledown | Linux User CPU |         LT         |     10    |
+| 57be3c4e-3e6f-436b-ad22-90b0dacc0f80 | test.com         |    30    |     4      |     2      |  scaleup  | Linux User CPU |         GT         |     80    |
++--------------------------------------+-------------------------------+----------+------------+-----------+----------------+--------------------+-----------+
+```
+
 TODO
 --------
 - [X] Display template name and serviceoffering name in vmprofile list function;
 - [X] Function to list autoscale vm group;
-- [ ] Function to create counters;
 - [X] Function to list load balancers rules;
 - [ ] Remove to all commands;
 - [ ] Validate all inputs;
-- [X] Enable to create an autoscale in projects
+- [X] Enable to create an autoscale in projects;
+- [X] Display results with tabular format;
 
 
 References
