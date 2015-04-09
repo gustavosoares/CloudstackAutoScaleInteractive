@@ -86,7 +86,7 @@ Listing vm profiles...:
 +--------------------------------------+-----------------------------+-----------------+
 Enter the vm profile id: 0dc05453-9a09-4739-8c86-ad2f5c9b3b42
 
-"Creating vm group. Job id = 69b935eb-2b93-478d-b8e5-20d9f44b65f0
+Creating vm group. Job id = 69b935eb-2b93-478d-b8e5-20d9f44b65f0
 ```
 
 ```
