@@ -87,8 +87,8 @@ def listLoadBalancerRules(projectid):
 	
 	return table
 
-def listAutoScalePolicies():
-	autoscalepolicies = cloudstack.listAutoScalePolicies()
+def listAutoScalePolicies(projectid):
+	autoscalepolicies = cloudstack.listAutoScalePolicies({'projectid': projectid})
 	table = PrettyTable(["ID", "Action", "Duration", "QuietTime", "Counter", "RelationalOperator", "Threshold(%)"])
 
 	for autoscalepolicy in autoscalepolicies['autoscalepolicy']:
@@ -214,7 +214,7 @@ if args.option == 'list':
 		print listConditions(projectid)
 	elif args.command == 'policy':
 		print Colors.BOLD + "Listing policies...:" + Colors.ENDC
-		print listAutoScalePolicies()
+		print listAutoScalePolicies(projectid)
 	elif args.command == 'vmprofile':
 		print Colors.BOLD + "Listing vm profiles...:" + Colors.ENDC
 		print listAutoScaleVmProfiles(projectid)
@@ -281,7 +281,7 @@ if args.option == 'create':
 			print Colors.FAIL + "Error: this value is not integer" + Colors.ENDC
 			sys.exit(1)
 		print Colors.BOLD + "Listing policies...:" + Colors.ENDC
-		print listAutoScalePolicies()
+		print listAutoScalePolicies(projectid)
 		scaledownpolicyids = raw_input(Colors.BOLD + "Enter the policy id to scaledown: " + Colors.ENDC)
 		scaleuppolicyids = raw_input(Colors.BOLD + "Enter the policy id to scaleup: " + Colors.ENDC)
 		print Colors.BOLD + "Listing vm profiles...:" + Colors.ENDC
