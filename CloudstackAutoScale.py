@@ -36,6 +36,11 @@ def asyncResult(jobid):
  	
  	return result
 
+def listNumVirtualMachines(projectid, name, state):
+	vms = cloudstack.listVirtualMachines({'projectid': projectid, 'name': name, 'state': state})
+	
+	return len(vms)
+
 def listCounters():
 	counters = cloudstack.listCounters()
 	table = PrettyTable(["ID", "Name", "Source"])
@@ -118,7 +123,8 @@ def listAutoScaleVmProfiles(projectid):
 
 def listAutoScaleVmGroup(projectid):
 	vmgroups = cloudstack.listAutoScaleVmGroups({'projectid': projectid})
-	table = PrettyTable(["ID", "LoadBalancer", "Interval", "Maxmembers", "Minmembers", "Action", "Counter", "RelationalOperator", "Threshold"])
+	table = PrettyTable(["ID", "LoadBalancer", "Interval", "Maxmembers", "Minmembers", "Running", "Action", "Counter", "RelationalOperator", "Threshold"])
+	numvmsrunning = listNumVirtualMachines(projectid, 'as-', 'Running')
 
 	for vmgroup in vmgroups:
 		lbruleid = vmgroup['lbruleid']
@@ -132,13 +138,13 @@ def listAutoScaleVmGroup(projectid):
 			for conditiond in conditionsd:
 				countersd = (conditiond.get('counter'))
 				for counterd in countersd:
-					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], scaledownpolicy['action'], counterd['name'], conditiond['relationaloperator'], conditiond['threshold']])
+					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], numvmsrunning, scaledownpolicy['action'], counterd['name'], conditiond['relationaloperator'], conditiond['threshold']])
 		for scaleuppolicy in scaleuppolicies:
 			conditionsu = (scaleuppolicy.get('conditions'))
 			for conditionu in conditionsu:
 				countersu = (conditionu.get('counter'))
 				for counteru in countersu:
-					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], scaleuppolicy['action'], counteru['name'], conditionu['relationaloperator'], conditionu['threshold']])
+					table.add_row([vmgroup['id'], lbname, vmgroup['interval'], vmgroup['maxmembers'], vmgroup['minmembers'], numvmsrunning, scaleuppolicy['action'], counteru['name'], conditionu['relationaloperator'], conditionu['threshold']])
 	
 	return table
 
