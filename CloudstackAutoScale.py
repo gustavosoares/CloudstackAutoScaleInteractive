@@ -193,9 +193,18 @@ def createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleupp
 	print "Creating vm group. Job id = %s" % job['jobid']
 	return asyncResult(job['jobid'])
 
+def deleteVmGroup(id):
+	job = cloudstack.deleteAutoScaleVmGroup({
+		'id': id
+	})
+
+	print "Deleting vm group. Job id = %s" % job['jobid']
+	return asyncResult(job['jobid'])
+
+
 parser = argparse.ArgumentParser(description='Cloudstack Auto Scale script.')
 parser.add_argument('-c','--command', help='counter, condition, policy, vmprofile or vmgroup',required=True)
-parser.add_argument('-o','--option',help='list or create', required=True)
+parser.add_argument('-o','--option',help='list, create or delete', required=True)
 args = parser.parse_args()
 
 if len(sys.argv) <= 1:
@@ -296,3 +305,15 @@ if args.option == 'create':
 		createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleuppolicyids, vmprofileid)
 	else:
 		parser.print_help()
+if args.option == 'delete':
+	if args.command == 'vmgroup':
+		print Colors.BOLD + "Listing vm groups...:" + Colors.ENDC
+		print listAutoScaleVmGroup(projectid)
+		print Colors.BOLD + "Deleting vm group...:" + Colors.ENDC
+		id = raw_input(Colors.BOLD + "Enter the vmgroup id: " + Colors.ENDC)
+		deleteVmGroup(id)
+	elif args.command == 'vmprofile' or 'vmprofile' or 'policy' or 'counter':
+		print Colors.WARNING + "Function not implemented" + Colors.ENDC
+	else:
+		parser.print_help()
+
