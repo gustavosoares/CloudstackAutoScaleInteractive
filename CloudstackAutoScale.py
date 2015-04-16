@@ -123,7 +123,7 @@ def listAutoScaleVmProfiles(projectid):
 
 def listAutoScaleVmGroup(projectid):
 	vmgroups = cloudstack.listAutoScaleVmGroups({'projectid': projectid})
-	table = PrettyTable(["ID", "LoadBalancer", "Interval", "Maxmembers", "Minmembers", "Running", "Action", "Counter", "RelationalOperator", "Threshold"])
+	table = PrettyTable(["ID", "LoadBalancer", "Interval", "Max", "Min", "Running", "Action", "Counter", "Operator", "% Threshold"])
 	numvmsrunning = listNumVirtualMachines(projectid, 'as-', 'Running')
 
 	for vmgroup in vmgroups:
@@ -296,4 +296,3 @@ if args.option == 'create':
 		createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleuppolicyids, vmprofileid)
 	else:
 		parser.print_help()
-
