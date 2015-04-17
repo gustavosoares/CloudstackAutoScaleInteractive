@@ -32,8 +32,8 @@ apikey: xxxxxx
 secret: xxxxxx
 
 [Envs]
-zoneid: xxxxxx
-projectid: xxxxxx
+zone: zonename
+project: projectname
 ```
 
 Executing Script
@@ -106,7 +106,7 @@ TODO
 - [X] Display template name and serviceoffering name in vmprofile list function;
 - [X] Function to list autoscale vm group;
 - [X] Function to list load balancers rules;
-- [ ] Remove to all commands;
+- [X] Remove to all commands;
 - [ ] Validate all inputs;
 - [X] Enable to create an autoscale in projects;
 - [X] Display results with tabular format;

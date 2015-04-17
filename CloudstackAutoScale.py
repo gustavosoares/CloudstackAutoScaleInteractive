@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 __author__ = 'Cristiano Casado <co.casado@gmail.com>'
-__version__ = '0.4'
+__version__ = '0.5'
 
 from Config import Config
 from prettytable import PrettyTable
@@ -35,6 +35,20 @@ def asyncResult(jobid):
  	result =  async['jobresult']
  	
  	return result
+
+def listZoneId(name):
+	zones = cloudstack.listZones({'name': name})
+	for zone in zones:
+		zoneid = zone['id']
+
+	return zoneid
+
+def listProjectId(name):
+	projects = cloudstack.listProjects({'name': name})
+	for project in projects:
+		projectid = project['id']
+
+	return projectid
 
 def listNumVirtualMachines(projectid, name, state):
 	vms = cloudstack.listVirtualMachines({'projectid': projectid, 'name': name, 'state': state})
@@ -157,7 +171,11 @@ def createCondition(counterid, operator, threshold, projectid):
 	})
 
 	print "Creating condition. Job id = %s" % job['jobid']
-	return asyncResult(job['jobid'])
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['condition']['id']:
+		return Colors.OKGREEN + "Condition created with id: %s" % jobresult['condition']['id'] + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
 def createPolicy(conditionids, action, duration):
 	job = cloudstack.createAutoScalePolicy({
@@ -167,7 +185,11 @@ def createPolicy(conditionids, action, duration):
 	})
 
 	print "Creating policy. Job id = %s" % job['jobid']
-	return asyncResult(job['jobid'])
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['autoscalepolicy']['id']:
+		return Colors.OKGREEN + "Policy created with id: %s" % jobresult['autoscalepolicy']['id'] + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
 def createVmProfile(serviceofferingid, templateid, zoneid, projectid):
 	job = cloudstack.createAutoScaleVmProfile({
@@ -178,7 +200,11 @@ def createVmProfile(serviceofferingid, templateid, zoneid, projectid):
 	})
 
 	print "Creating vm profile. Job id = %s" % job['jobid']
-	return asyncResult(job['jobid'])
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['autoscalevmprofile']['id']:
+		return Colors.OKGREEN + "Profile created with id: %s" % jobresult['autoscalevmprofile']['id'] + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
 def createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleuppolicyids, vmprofileid):
 	job = cloudstack.createAutoScaleVmGroup({
@@ -191,7 +217,11 @@ def createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleupp
 	})
 
 	print "Creating vm group. Job id = %s" % job['jobid']
-	return asyncResult(job['jobid'])
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['autoscalevmgroup']['id']:
+		return Colors.OKGREEN + "Vm group created with id: %s" % jobresult['autoscalevmgroup']['id'] + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
 def deleteVmGroup(id):
 	job = cloudstack.deleteAutoScaleVmGroup({
@@ -199,8 +229,47 @@ def deleteVmGroup(id):
 	})
 
 	print "Deleting vm group. Job id = %s" % job['jobid']
-	return asyncResult(job['jobid'])
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['success']:
+		return Colors.OKGREEN + "Job executed with success." + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
+def deletePolicy(id):
+	job = cloudstack.deleteAutoScalePolicy({
+		'id': id
+	})
+
+	print "Deleting policy. Job id = %s" % job['jobid']
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['success']:
+		return Colors.OKGREEN + "Job executed with success." + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
+
+def deleteCondition(id):
+	job = cloudstack.deleteCondition({
+		'id': id
+	})
+
+	print "Deleting condition. Job id = %s" % job['jobid']
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['success']:
+		return Colors.OKGREEN + "Job executed with success." + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
+
+def deleteVmProfile(id):
+	job = cloudstack.deleteAutoScaleVmProfile({
+		'id': id
+	})
+
+	print "Deleting vm profile. Job id = %s" % job['jobid']
+	jobresult = asyncResult(job['jobid'])
+	if jobresult['success']:
+		return Colors.OKGREEN + "Job executed with success." + Colors.ENDC
+	else:
+		return Colors.FAIL + "Error during job execution." + Colors.ENDC
 
 parser = argparse.ArgumentParser(description='Cloudstack Auto Scale script.')
 parser.add_argument('-c','--command', help='counter, condition, policy, vmprofile or vmgroup',required=True)
@@ -215,10 +284,15 @@ config = Config()
 api = config.ConfigSectionMap("ConfigApi")['api']
 apikey = config.ConfigSectionMap("ConfigApi")['apikey']
 secret = config.ConfigSectionMap("ConfigApi")['secret']
-projectid = config.ConfigSectionMap("Envs")['projectid']
-zoneid = config.ConfigSectionMap("Envs")['zoneid']
 
 cloudstack = CloudStack.Client(api, apikey, secret)
+
+project = config.ConfigSectionMap("Envs")['project']
+zone = config.ConfigSectionMap("Envs")['zone']
+projectid = listProjectId(project)
+zoneid = listZoneId(zone)
+
+
 
 if args.option == 'list':
 	if args.command == 'counter':
@@ -259,7 +333,7 @@ if args.option == 'create':
 		except ValueError:
 			print Colors.FAIL + "Error: this value is not integer" + Colors.ENDC
 			sys.exit(1)
-		createCondition(counterid, operator, threshold, projectid)
+		print createCondition(counterid, operator, threshold, projectid)
 	elif args.command == 'policy':
 		print Colors.BOLD + "Creating policy...:" + Colors.ENDC
 		print Colors.BOLD + "Listing conditions...:" + Colors.ENDC
@@ -274,7 +348,7 @@ if args.option == 'create':
 		except ValueError:
 			print Colors.FAIL + "Error: this value is not integer" + Colors.ENDC
 			sys.exit(1)
-		createPolicy(conditionids, action, duration)
+		print createPolicy(conditionids, action, duration)
 	elif args.command == 'vmprofile':
 		print Colors.BOLD + "Creating vm profile...:" + Colors.ENDC
 		print Colors.BOLD + "Listing service offerings...:" + Colors.ENDC
@@ -283,7 +357,7 @@ if args.option == 'create':
 		print Colors.BOLD + "Listing templates...:" + Colors.ENDC
 		print listTemplates('featured')
 		templateid = raw_input(Colors.BOLD + "Enter the template id: " + Colors.ENDC)
-		createVmProfile(serviceofferingid, templateid, zoneid, projectid)
+		print createVmProfile(serviceofferingid, templateid, zoneid, projectid)
 	elif args.command == 'vmgroup':
 		print Colors.BOLD + "Creating vm group...:" + Colors.ENDC
 		print Colors.BOLD + "Listing load balancers...:" + Colors.ENDC
@@ -302,7 +376,7 @@ if args.option == 'create':
 		print Colors.BOLD + "Listing vm profiles...:" + Colors.ENDC
 		print listAutoScaleVmProfiles(projectid)
 		vmprofileid = raw_input(Colors.BOLD + "Enter the vm profile id: " + Colors.ENDC)
-		createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleuppolicyids, vmprofileid)
+		print createVmGroup(lbruleid, minmembers, maxmembers, scaledownpolicyids, scaleuppolicyids, vmprofileid)
 	else:
 		parser.print_help()
 if args.option == 'delete':
@@ -311,8 +385,26 @@ if args.option == 'delete':
 		print listAutoScaleVmGroup(projectid)
 		print Colors.BOLD + "Deleting vm group...:" + Colors.ENDC
 		id = raw_input(Colors.BOLD + "Enter the vmgroup id: " + Colors.ENDC)
-		deleteVmGroup(id)
-	elif args.command == 'vmprofile' or 'vmprofile' or 'policy' or 'counter':
+		print deleteVmGroup(id)
+	elif args.command == 'policy':
+		print Colors.BOLD + "Listing policies...:" + Colors.ENDC
+		print listAutoScalePolicies(projectid)
+		print Colors.BOLD + "Deleting policy...:" + Colors.ENDC
+		id = raw_input(Colors.BOLD + "Enter the policy id: " + Colors.ENDC)
+		print deletePolicy(id)
+	elif args.command == 'condition':
+		print Colors.BOLD + "Listing conditions...:" + Colors.ENDC
+		print listConditions(projectid)
+		print Colors.BOLD + "Deleting condition...:" + Colors.ENDC
+		id = raw_input(Colors.BOLD + "Enter the condition id: " + Colors.ENDC)
+		print deleteCondition(id)
+	elif args.command == 'vmprofile':
+		print Colors.BOLD + "Listing vm profiles...:" + Colors.ENDC
+		print listAutoScaleVmProfiles(projectid)
+		print Colors.BOLD + "Deleting vm profile...:" + Colors.ENDC
+		id = raw_input(Colors.BOLD + "Enter the vm profile id: " + Colors.ENDC)
+		print deleteVmProfile(id)
+	elif args.command == 'counter':
 		print Colors.WARNING + "Function not implemented" + Colors.ENDC
 	else:
 		parser.print_help()
