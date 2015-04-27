@@ -50,7 +50,7 @@ optional arguments:
   -c COMMAND, --command COMMAND
                         counter, condition, policy, vmprofile or vmgroup
   -o OPTION, --option OPTION
-                        list or create
+                        list, create or delete
 ```
 
 Examples
