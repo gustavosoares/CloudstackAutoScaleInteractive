@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 __author__ = 'Cristiano Casado <co.casado@gmail.com>'
-__version__ = '0.5'
+__version__ = '0.6'
 
 from Config import Config
 from prettytable import PrettyTable
@@ -88,11 +88,11 @@ def listServiceOfferings():
 
 def listTemplates(templatefilter):
 	templates = cloudstack.listTemplates({'templatefilter': templatefilter})
-	table = PrettyTable(["ID", "Name"])
+	table = PrettyTable(["ID", "Name", "DisplayText", "IsReady?", "IsFeatured?"])
 	table.align["Name"] = "l"
 
 	for template in templates:
-		table.add_row([template['id'], template['name']])
+		table.add_row([template['id'], template['name'], template['displaytext'], template['isready'], template['isfeatured']])
 	
 	return table
 
@@ -354,7 +354,7 @@ if args.option == 'create':
 		print Colors.BOLD + "Listing service offerings...:" + Colors.ENDC
 		print listServiceOfferings()
 		serviceofferingid = raw_input(Colors.BOLD + "Enter the service offering id: " + Colors.ENDC)
-		print Colors.BOLD + "Listing templates...:" + Colors.ENDC
+		print Colors.BOLD + "Listing featured templates...:" + Colors.ENDC
 		print listTemplates('featured')
 		templateid = raw_input(Colors.BOLD + "Enter the template id: " + Colors.ENDC)
 		print createVmProfile(serviceofferingid, templateid, zoneid, projectid)
