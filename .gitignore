@@ -3,3 +3,4 @@
 *.bak
 .wiki
 properties
+.idea/
