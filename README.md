@@ -9,7 +9,7 @@ see the https://github.com/jasonhancock/cloudstack-python-client/tags.
 Script Setup
 --------
 
-Create the environment and install python packages
+Create the virtualenv environment, preferably with python 2.7.x, and install python packages.
 
 ```
 $ mkvirtualenv CloudstackAutoScale
@@ -17,15 +17,11 @@ $ workon CloudstackAutoScale
 $ pip install -r requirements.txt
 ```
 
-You need to create the properties file to setup script with parameters to access cloudstack api and to define zone to auto scale
+You need to create the properties file to setup the script with parameters to access cloudstack api 
+and to define the zone that you wish to auto scale.
 
 ```
-$ touch properties
-```
-
-Edit the properties file with the contents below:
-
-```
+cat << EOF > properties
 [ConfigApi]
 api: https://host:443/client/api
 apikey: xxxxxx
@@ -34,6 +30,7 @@ secret: xxxxxx
 [Envs]
 zone: zonename
 project: projectname
+EOF
 ```
 
 Executing Script
