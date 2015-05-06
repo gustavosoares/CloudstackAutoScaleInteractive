@@ -1,4 +1,4 @@
-from BaseClient import BaseClient
+from .base_client import BaseClient
 
 class Client(BaseClient):
     def createNetworkOffering(self, args={}):
